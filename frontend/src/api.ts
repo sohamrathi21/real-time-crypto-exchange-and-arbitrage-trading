@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Snapshot } from "./types";
 export const API = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+export const POLLING = import.meta.env.VITE_MARKET_TRANSPORT === "poll";
 export async function request<T>(
   path: string,
   options?: RequestInit,
@@ -21,6 +22,30 @@ export function useMarket() {
     [error, setError] = useState("");
   const latest = useRef(0);
   useEffect(() => {
+    if (POLLING) {
+      let stopped = false;
+      let timer: ReturnType<typeof setTimeout>;
+      const controller = new AbortController();
+      const poll = async () => {
+        try {
+          const next = await request<Snapshot>("/analytics", { signal: controller.signal });
+          if (!Array.isArray(next.prices) || !Number.isFinite(next.timestamp)) throw new Error("Market API returned an invalid response");
+          if (stopped) return;
+          latest.current = next.timestamp;
+          setData(next);
+          setConnected(true);
+          setError("");
+        } catch (e) {
+          if (stopped) return;
+          setConnected(false);
+          setError(e instanceof Error ? e.message : "Market data unavailable. Retrying…");
+        } finally {
+          if (!stopped) timer = setTimeout(poll, 3000);
+        }
+      };
+      void poll();
+      return () => { stopped = true; controller.abort(); clearTimeout(timer); };
+    }
     let stopped = false,
       socket: WebSocket,
       retry: ReturnType<typeof setTimeout>,

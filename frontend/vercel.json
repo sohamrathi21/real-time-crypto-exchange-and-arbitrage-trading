@@ -1,1 +1,1 @@
-{"buildCommand":"npm run build","outputDirectory":"dist","framework":"vite","rewrites":[{"source":"/(.*)","destination":"/index.html"}]}
+{"buildCommand":"VITE_MARKET_TRANSPORT=poll npm run build","outputDirectory":"dist","framework":"vite","functions":{"api/index.py":{"maxDuration":30}},"rewrites":[{"source":"/api/:path*","destination":"/api/index"},{"source":"/(.*)","destination":"/index.html"}]}

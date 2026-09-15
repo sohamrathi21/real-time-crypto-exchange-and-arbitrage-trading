@@ -30,7 +30,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useMarket, fmt, compact, time } from "./api";
+import { useMarket, fmt, compact, time, POLLING } from "./api";
 import {
   Badge,
   BookPanel,
@@ -488,7 +488,7 @@ export default function App() {
             <div className="header-meta">
               <span>
                 <i className={`dot ${!connected ? "off" : ""}`} />
-                {connected ? "STREAM CONNECTED" : "CONNECTING"}
+                {connected ? (POLLING ? "LIVE QUOTES CONNECTED" : "STREAM CONNECTED") : "CONNECTING"}
               </span>
               <b>
                 {time(now)}{" "}
@@ -547,7 +547,7 @@ export default function App() {
             <section className="panel">
               <Empty
                 title="Connecting to the market engine"
-                detail="Start the FastAPI backend on port 8000. Quotes appear only after the data provider connects."
+                detail="Waiting for fresh quotes from the market service. Connection retries are automatic."
               />
             </section>
           ) : (
@@ -1031,7 +1031,7 @@ export default function App() {
         </span>
         <div />
         <span>
-          WEBSOCKET <b>{connected ? "CONNECTED" : "RETRYING"}</b>
+          {POLLING ? "LIVE POLLING" : "WEBSOCKET"} <b>{connected ? "CONNECTED" : "RETRYING"}</b>
         </span>
         <span>
           LAST UPDATE{" "}
