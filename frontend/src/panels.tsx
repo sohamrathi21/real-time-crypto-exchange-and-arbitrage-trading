@@ -16,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { request, fmt, compact, time, API } from "./api";
+import { request, fmt, compact, time, API, POLLING } from "./api";
 import { StreamChart } from "./charts";
 import type { Book, Opportunity, Price, Snapshot } from "./types";
 export const names: Record<string, string> = {
@@ -167,7 +167,8 @@ export function InstrumentChart({
     [error, setError] = useState("");
   useEffect(() => {
     setPoints([]);
-    if (!price) return;
+    setError("");
+    if (!price || POLLING) return;
     let active = true;
     const load = () =>
       request<{ timestamp: number; price: number }[]>(
@@ -189,6 +190,11 @@ export function InstrumentChart({
       clearInterval(timer);
     };
   }, [price?.symbol, price?.exchange]);
+  useEffect(() => {
+    if (!POLLING || !price || price.stale) return;
+    setPoints(previous => previous.some(p => p.timestamp === price.timestamp) ? previous :
+      [...previous, {timestamp:price.timestamp, price:price.price}].slice(-1800));
+  }, [price?.symbol, price?.exchange, price?.timestamp]);
   if (!price)
     return (
       <section className="panel">
@@ -371,7 +377,8 @@ export function BookPanel({ price }: { price: Price | undefined }) {
     [error, setError] = useState("");
   useEffect(() => {
     setBook(null);
-    if (!price) return;
+    setError("");
+    if (!price || POLLING) return;
     let active = true;
     let socket: WebSocket;
     let retry: ReturnType<typeof setTimeout>;

@@ -622,7 +622,7 @@ export default function App() {
                             <div key={name}>
                               <span>
                                 <i
-                                  className={`dot ${s.state === "disconnected" ? "off" : ""}`}
+                                  className={`dot ${s.state !== "connected" ? "off" : ""}`}
                                 />
                                 {name}
                               </span>
@@ -815,7 +815,7 @@ export default function App() {
                 </>
               )}
               {page === "Portfolio" && <PaperPortfolio data={data} />}
-              {page === "Paper Trading" && (
+              {page === "Paper Trading" && (POLLING ? <ArbitrageDemo /> :
                 <TradingTerminal
                   data={data as ExtendedSnapshot}
                   price={price}
