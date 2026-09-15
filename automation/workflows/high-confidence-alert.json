@@ -1,0 +1,160 @@
+{
+  "name": "ARBITRAGE X \u00b7 High confidence + guarded paper orchestration",
+  "nodes": [
+    {
+      "id": "2cf2393e-c95d-457a-a292-f38803577801",
+      "name": "Engine event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "arbitrage-x-events",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "2cf2393e-c95d-457a-a292-f38803577801"
+    },
+    {
+      "id": "f8ce53d8-ba6a-4bbe-8b5d-e2accb51fc78",
+      "name": "Validate local token and event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const e=$json.body; const token=$json.headers['x-automation-token']; if (!$env.ARBITRAGE_AUTOMATION_TOKEN || token!==$env.ARBITRAGE_AUTOMATION_TOKEN) throw new Error('Invalid automation token'); if(e.event_type==='HIGH_CONFIDENCE_OPPORTUNITY'){const o=e.metadata;if(!(o.net_edge_percent>=0.15&&o.confidence_score>=85&&o.liquidity_score>=60))return [];} return [{json:e}];"
+      }
+    },
+    {
+      "id": "36902547-ca2f-4d39-b80f-32f57431c9d2",
+      "name": "Local terminal notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        460,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ARBITRAGE_API_URL + '/automation/notify' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Token",
+              "value": "={{ $env.ARBITRAGE_AUTOMATION_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      }
+    },
+    {
+      "id": "only-auto-opportunity",
+      "name": "Only qualified opportunities",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const e=$('Validate local token and event').item.json; return e.event_type==='HIGH_CONFIDENCE_OPPORTUNITY'?[{json:e}]:[];"
+      }
+    },
+    {
+      "id": "328a0ea6-15bf-45e5-ac6d-793079cbe39c",
+      "name": "Request guarded paper execution",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ARBITRAGE_API_URL + '/automation/execute' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Token",
+              "value": "={{ $env.ARBITRAGE_AUTOMATION_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({opportunity_id: $('Validate local token and event').item.json.metadata.id, idempotency_key: 'n8n-' + $('Validate local token and event').item.json.event_id}) }}"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Engine event": {
+      "main": [
+        [
+          {
+            "node": "Validate local token and event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate local token and event": {
+      "main": [
+        [
+          {
+            "node": "Local terminal notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Local terminal notification": {
+      "main": [
+        [
+          {
+            "node": "Only qualified opportunities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Only qualified opportunities": {
+      "main": [
+        [
+          {
+            "node": "Request guarded paper execution",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [],
+  "id": "K6ESwyuAQ5WUAxZz"
+}

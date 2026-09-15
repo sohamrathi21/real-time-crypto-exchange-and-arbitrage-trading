@@ -1,0 +1,24 @@
+.env
+.venv/
+node_modules/
+dist/
+__pycache__/
+.pytest_cache/
+*.db
+*.log
+artifacts/
+
+.pnpm-store/
+.vercel/
+*.tsbuildinfo
+reference-*.png
+
+
+# Local credentials and machine setup helpers
+.env.*
+!.env.example
+*.pem
+*.key
+tools/registry_proxy.py
+tools/download_wsl.py
+tools/enable-docker-features.ps1

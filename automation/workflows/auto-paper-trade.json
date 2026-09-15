@@ -1,0 +1,95 @@
+{
+  "name": "ARBITRAGE X \u00b7 Optional dedicated auto paper webhook",
+  "nodes": [
+    {
+      "id": "18cdda2b-0bae-4385-9f6f-931d187bd564",
+      "name": "Paper automation event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "arbitrage-x-auto-paper",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "18cdda2b-0bae-4385-9f6f-931d187bd564"
+    },
+    {
+      "id": "ea4cb951-54e2-4f5b-99ff-e496be308dc7",
+      "name": "Verify and normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "if($json.headers['x-automation-token']!==$env.ARBITRAGE_AUTOMATION_TOKEN) throw new Error('Invalid token'); const e=$json.body; return [{json:{opportunity_id:e.metadata.id,idempotency_key:'auto-'+e.event_id}}];"
+      }
+    },
+    {
+      "id": "f516ec4b-5c2b-4991-a429-e20a5b1fa546",
+      "name": "Final Python risk validation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ARBITRAGE_API_URL + '/automation/execute' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Token",
+              "value": "={{ $env.ARBITRAGE_AUTOMATION_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Paper automation event": {
+      "main": [
+        [
+          {
+            "node": "Verify and normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify and normalize": {
+      "main": [
+        [
+          {
+            "node": "Final Python risk validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [],
+  "id": "1P7J4vvIumdMPnay"
+}

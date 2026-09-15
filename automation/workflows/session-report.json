@@ -1,0 +1,71 @@
+{
+  "name": "ARBITRAGE X \u00b7 Session report",
+  "nodes": [
+    {
+      "id": "ed445680-57ad-42e9-a38a-4e7b396b3c4c",
+      "name": "Every fifteen minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f7d55945-190f-4db7-a02c-b05f755121ea",
+      "name": "Create and persist session report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ARBITRAGE_API_URL + '/reports' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Token",
+              "value": "={{ $env.ARBITRAGE_AUTOMATION_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Every fifteen minutes": {
+      "main": [
+        [
+          {
+            "node": "Create and persist session report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [],
+  "id": "sMBFF96Yn3eiMTNF"
+}

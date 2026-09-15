@@ -1,0 +1,135 @@
+{
+  "name": "ARBITRAGE X \u00b7 Market health monitor",
+  "nodes": [
+    {
+      "id": "c06faa6b-52b7-4f2b-aafb-025db965b436",
+      "name": "Every minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "60cc3fc7-da58-4f73-996f-1e9f3b07d870",
+      "name": "Read engine health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.ARBITRAGE_API_URL + '/system' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Token",
+              "value": "={{ $env.ARBITRAGE_AUTOMATION_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        }
+      }
+    },
+    {
+      "id": "ef742d2d-a862-41b9-b272-359e68b63330",
+      "name": "Create health event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        450,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{json:{event_id:'health-'+new Date().toISOString().slice(0,16),event_type:'MARKET_HEALTH_REPORT',timestamp:Date.now(),metadata:$json}}];"
+      }
+    },
+    {
+      "id": "44e4e7e9-4c8d-4586-8bd8-62f2e6ac057d",
+      "name": "Store local health notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        670,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ARBITRAGE_API_URL + '/automation/notify' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Token",
+              "value": "={{ $env.ARBITRAGE_AUTOMATION_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      }
+    }
+  ],
+  "connections": {
+    "Every minute": {
+      "main": [
+        [
+          {
+            "node": "Read engine health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read engine health": {
+      "main": [
+        [
+          {
+            "node": "Create health event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create health event": {
+      "main": [
+        [
+          {
+            "node": "Store local health notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [],
+  "id": "Fr7byZLS0bA88oGH"
+}

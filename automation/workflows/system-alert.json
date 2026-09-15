@@ -1,0 +1,95 @@
+{
+  "name": "ARBITRAGE X \u00b7 System alert receiver",
+  "nodes": [
+    {
+      "id": "49f3d3a4-e063-4d73-8eb2-8cfac96aedb5",
+      "name": "System event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "arbitrage-x-system",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "49f3d3a4-e063-4d73-8eb2-8cfac96aedb5"
+    },
+    {
+      "id": "9ffc62bc-6895-4a7d-a0e8-710dd916f153",
+      "name": "Verify system event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "if($json.headers['x-automation-token']!==$env.ARBITRAGE_AUTOMATION_TOKEN) throw new Error('Invalid token'); return [{json:$json.body}];"
+      }
+    },
+    {
+      "id": "ea3648a5-2818-49c9-aa47-2635104154f5",
+      "name": "Persist system notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        450,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.ARBITRAGE_API_URL + '/automation/notify' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Automation-Token",
+              "value": "={{ $env.ARBITRAGE_AUTOMATION_TOKEN }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}"
+      }
+    }
+  ],
+  "connections": {
+    "System event": {
+      "main": [
+        [
+          {
+            "node": "Verify system event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verify system event": {
+      "main": [
+        [
+          {
+            "node": "Persist system notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [],
+  "id": "sl5eYD2ZSqoRFxkV"
+}

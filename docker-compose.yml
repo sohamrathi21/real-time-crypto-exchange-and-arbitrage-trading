@@ -1,0 +1,98 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+  backend:
+    build: .
+    environment:
+      DATA_MODE: ${DATA_MODE:-live}
+      KITE_API_KEY: ${KITE_API_KEY:-}
+      KITE_ACCESS_TOKEN: ${KITE_ACCESS_TOKEN:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_ID: ${STRIPE_PRICE_ID:-}
+      STRIPE_ALLOW_LIVE: ${STRIPE_ALLOW_LIVE:-false}
+      BILLING_PUBLIC_URL: ${BILLING_PUBLIC_URL:-http://localhost:8080}
+      DATABASE_URL: postgresql+asyncpg://arbitrage:${POSTGRES_PASSWORD:-arbitrage-local}@postgres:5432/arbitrage
+      REDIS_URL: redis://redis:6379/0
+      N8N_WEBHOOK_URL: http://n8n:5678/webhook/arbitrage-x-events
+      AUTOMATION_TOKEN: ${AUTOMATION_TOKEN:-local-demo-token-change-before-public-hosting}
+      AUTO_PAPER_TRADE: "false"
+      MIN_AUTO_EDGE: ${MIN_AUTO_EDGE:-0.15}
+      MIN_AUTO_CONFIDENCE: ${MIN_AUTO_CONFIDENCE:-85}
+      MAX_AUTO_CAPITAL: ${MAX_AUTO_CAPITAL:-10000}
+      MAX_DAILY_PAPER_TRADES: ${MAX_DAILY_PAPER_TRADES:-20}
+      MAX_TRADE_SIZE: ${MAX_TRADE_SIZE:-10000}
+      TRADE_NOTIONAL: ${TRADE_NOTIONAL:-1000}
+      MIN_NET_EDGE_PERCENT: ${MIN_NET_EDGE_PERCENT:-0.03}
+      MAX_PRICE_AGE_MS: ${MAX_PRICE_AGE_MS:-5000}
+      MAX_SLIPPAGE_PERCENT: ${MAX_SLIPPAGE_PERCENT:-0.25}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 4s
+      retries: 10
+    restart: unless-stopped
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: arbitrage
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arbitrage-local}
+      POSTGRES_DB: arbitrage
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arbitrage -d arbitrage"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.38.7
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_PROTOCOL: http
+      WEBHOOK_URL: http://localhost:5678/
+      TZ: Asia/Kolkata
+      GENERIC_TIMEZONE: Asia/Kolkata
+      N8N_SECURE_COOKIE: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      ARBITRAGE_API_URL: http://backend:8000
+      ARBITRAGE_AUTOMATION_TOKEN: ${AUTOMATION_TOKEN:-local-demo-token-change-before-public-hosting}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./automation/workflows:/workflows:ro
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  redis_data:
+  n8n_data:
+
