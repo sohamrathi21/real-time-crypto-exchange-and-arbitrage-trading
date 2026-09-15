@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import { authClient } from "./auth";
 import "./styles.css";
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -23,7 +24,13 @@ class ErrorBoundary extends React.Component<
   }
 }
 // Start each document load at Home; in-app hash navigation remains available.
+async function start() {
 const startUrl = new URL(window.location.href);
+// Let the auth client process confirmation/recovery before resetting navigation.
+if (authClient && (startUrl.searchParams.has('code') || startUrl.hash.includes('access_token='))) {
+  await authClient.auth.initialize();
+  startUrl.searchParams.delete('code');
+}
 startUrl.hash = "Home";
 window.history.replaceState(window.history.state, "", startUrl);
 
@@ -34,3 +41,6 @@ createRoot(document.getElementById("root")!).render(
     </ErrorBoundary>
   </React.StrictMode>,
 );
+
+}
+void start();

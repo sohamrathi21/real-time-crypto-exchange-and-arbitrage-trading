@@ -1,3 +1,4 @@
+import { AccountMenu } from "./auth";
 import { ArbitrageDemo } from "./arbitrage-demo";
 import { IndianStocks } from "./india";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -348,7 +349,7 @@ export default function App() {
           <span>Search stocks, crypto, symbols, exchanges…</span>
           <kbd>⌘ K</kbd>
         </button>
-        <div className="top-status">
+        <AccountMenu /><div className="top-status">
           <span>
             <i className="dot" />
             CRYPTO 24/7

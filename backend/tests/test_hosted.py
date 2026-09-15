@@ -35,4 +35,12 @@ def test_shared_core_matches_source():
     root = Path(__file__).resolve().parents[2]
     for copied in (root / 'frontend/hosted_core').rglob('*.py'):
         relative = copied.relative_to(root / 'frontend/hosted_core')
-        assert copied.read_bytes() == (root / 'backend/app' / relative).read_bytes()
+        assert copied.read_text() == (root / 'backend/app' / relative).read_text()
+
+
+def test_empty_deployment_settings_use_defaults(monkeypatch):
+    monkeypatch.setenv('MAX_PRICE_AGE_MS', '')
+    monkeypatch.setenv('TRADE_NOTIONAL', '')
+    from hosted_core.config import Settings
+    assert Settings().max_price_age_ms == 5000
+    assert Settings().trade_notional == 1000
